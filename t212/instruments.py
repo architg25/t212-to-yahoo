@@ -38,7 +38,9 @@ class InstrumentsAPI:
     def _get_instruments_file_path(self) -> Path:
         """Get the file path for today's instruments cache."""
         today = datetime.now().strftime("%Y-%m-%d")
-        return self.data_dir / f"instruments_{today}.json"
+        instruments_dir = self.data_dir / today / "instruments"
+        instruments_dir.mkdir(parents=True, exist_ok=True)
+        return instruments_dir / "instruments.json"
 
     def _load_instruments_from_file(self) -> Optional[list]:
         """Load instruments from today's cache file if it exists."""
@@ -61,14 +63,21 @@ class InstrumentsAPI:
             pass
 
     def _cleanup_old_instrument_files(self):
-        """Remove old instrument cache files, keeping only today's."""
-        today_file = self._get_instruments_file_path()
-        for file in self.data_dir.glob("instruments_*.json"):
-            if file != today_file:
-                try:
-                    file.unlink()
-                except Exception:
-                    pass
+        """Remove old date directories, keeping only today's."""
+        today = datetime.now().strftime("%Y-%m-%d")
+
+        # Iterate through date directories (YYYY-MM-DD format)
+        if self.data_dir.exists():
+            for date_dir in self.data_dir.iterdir():
+                if date_dir.is_dir() and date_dir.name != today:
+                    # Check if it looks like a date directory (YYYY-MM-DD)
+                    if len(date_dir.name) == 10 and date_dir.name.count('-') == 2:
+                        try:
+                            # Remove the entire old date directory
+                            import shutil
+                            shutil.rmtree(date_dir)
+                        except Exception:
+                            pass
 
     def get_all_instruments(self, use_cache: bool = True) -> list:
         """

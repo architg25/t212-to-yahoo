@@ -43,11 +43,16 @@ Simple Python client for fetching account data from the Trading212 API.
 │   ├── client.py        # Base API client
 │   ├── account.py       # Account data endpoints
 │   ├── portfolio.py     # Portfolio endpoints
-│   └── instruments.py   # Instruments metadata (with caching)
+│   ├── instruments.py   # Instruments metadata (with caching)
+│   └── utils.py         # Utility functions
 ├── main.py              # Application entry point
 ├── requirements.txt     # Python dependencies
 ├── .env.example         # Environment variable template
-├── data/                # JSON output directory
+├── data/                # JSON output (organized by date)
+│   └── YYYY-MM-DD/      # Daily folders
+│       ├── account/     # Account data
+│       ├── portfolio/   # Portfolio snapshots
+│       └── instruments/ # Cached instruments
 └── docs/
     ├── SETUP.md         # Detailed setup guide
     ├── API_REFERENCE.md # Trading212 API documentation
@@ -74,7 +79,7 @@ Simple Python client for fetching account data from the Trading212 API.
 ## Usage as a Library
 
 ```python
-from t212 import Trading212Client
+from t212 import Trading212Client, save_to_file
 
 client = Trading212Client(
     api_key="your_api_key",
@@ -93,6 +98,10 @@ positions = client.portfolio.get_all_positions()
 
 # Get specific position
 position = client.portfolio.get_position('AAPL_US_EQ')
+
+# Save data to organized structure
+path = save_to_file(balance, "account", "balance")
+# Saves to: data/2025-11-05/account/balance_22-30-15.json
 ```
 
 ## Security

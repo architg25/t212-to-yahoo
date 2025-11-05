@@ -6,37 +6,11 @@ Main application for interacting with Trading212 API.
 """
 
 import os
-import json
 import sys
-from datetime import datetime
-from pathlib import Path
 
 from dotenv import load_dotenv
 
-from t212 import Trading212Client
-
-
-def save_to_file(data: dict, filename_prefix: str, directory: Path = Path("data")) -> Path:
-    """
-    Save data to a timestamped JSON file.
-
-    Args:
-        data: Data to save
-        filename_prefix: Prefix for the filename (e.g., 'account_balance')
-        directory: Directory to save the file in
-
-    Returns:
-        Path: Path to the saved file
-    """
-    directory.mkdir(parents=True, exist_ok=True)
-    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    filename = f"{filename_prefix}_{timestamp}.json"
-    filepath = directory / filename
-
-    with open(filepath, 'w') as f:
-        json.dump(data, f, indent=2)
-
-    return filepath
+from t212 import Trading212Client, save_to_file
 
 
 def print_account_balance(data: dict):
@@ -166,21 +140,21 @@ def fetch_account_data(client: Trading212Client):
     balance = client.account.get_cash()
     print_account_balance(balance)
 
-    balance_path = save_to_file(balance, "account_balance")
+    balance_path = save_to_file(balance, "account", "balance")
     print(f"✓ Balance saved to: {balance_path}")
 
     print("\nFetching account info...")
     info = client.account.get_info()
     print_account_info(info)
 
-    info_path = save_to_file(info, "account_info")
+    info_path = save_to_file(info, "account", "info")
     print(f"✓ Info saved to: {info_path}")
 
     print("\nFetching portfolio positions...")
     positions = client.portfolio.get_all_positions()
     print_portfolio(positions, client)
 
-    portfolio_path = save_to_file(positions, "portfolio")
+    portfolio_path = save_to_file(positions, "portfolio", "positions")
     print(f"✓ Portfolio saved to: {portfolio_path}")
 
 

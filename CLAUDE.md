@@ -14,12 +14,13 @@ Python client library for the Trading212 API with a modular architecture for eas
 
 ```
 t212/
-├── __init__.py      # Package exports (Trading212Client)
+├── __init__.py      # Package exports (Trading212Client, save_to_file)
 ├── auth.py          # HTTP Basic Auth handler
 ├── client.py        # Base HTTP client with request handling
 ├── account.py       # Account data endpoints (cash, info)
 ├── portfolio.py     # Portfolio endpoints (positions)
-└── instruments.py   # Instruments metadata (names, ISINs) with disk caching
+├── instruments.py   # Instruments metadata (names, ISINs) with disk caching
+└── utils.py         # Utility functions (save_to_file)
 ```
 
 ### Design Principles
@@ -158,9 +159,29 @@ def get_cash(self) -> dict:
 
 ### Instruments Cache
 - **In-memory**: Fast lookup during application runtime
-- **Disk**: Daily rotation (`data/instruments_YYYY-MM-DD.json`)
-- **Cleanup**: Automatically deletes old files
+- **Disk**: Daily rotation (`data/YYYY-MM-DD/instruments/instruments.json`)
+- **Cleanup**: Automatically deletes old date directories
 - **Rate limit**: 1 request per 50 seconds (caching avoids hitting limit)
+
+## Data Organization
+
+All output is organized by date for easy management:
+
+```
+data/
+  2025-11-05/
+    account/
+      balance_22-43-15.json
+      info_22-43-15.json
+    portfolio/
+      positions_22-43-15.json
+    instruments/
+      instruments.json
+  2025-11-06/
+    ...
+```
+
+Old date directories are automatically cleaned up when instruments are fetched.
 
 ## Roadmap
 

@@ -81,7 +81,7 @@ Realised PnL.................                      +1,000.00
 Cash Balance.................                      10,000.00
 ============================================================
 
-✓ Balance saved to: data/account_balance_2025-11-05_22-10-30.json
+✓ Balance saved to: data/2025-11-05/account/balance_22-10-30.json
 
 Fetching account info...
 
@@ -92,7 +92,7 @@ CURRENCYCODE.................                            USD
 ID...........................                          12345
 ============================================================
 
-✓ Info saved to: data/account_info_2025-11-05_22-10-30.json
+✓ Info saved to: data/2025-11-05/account/info_22-10-30.json
 
 Fetching portfolio positions...
 Loading instrument metadata...
@@ -123,7 +123,7 @@ PORTFOLIO - 2 Position(s)
   Total Unrealised PnL....                   +75.00
 ================================================================================
 
-✓ Portfolio saved to: data/portfolio_2025-11-05_22-43-15.json
+✓ Portfolio saved to: data/2025-11-05/portfolio/positions_22-43-15.json
 
 ============================================================
 SUCCESS
