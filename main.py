@@ -10,7 +10,7 @@ import sys
 
 from dotenv import load_dotenv
 
-from t212 import Trading212Client, save_to_file
+from t212 import Trading212Client, save_to_file, export_portfolio_to_yahoo_csv
 
 
 def print_account_balance(data: dict):
@@ -156,6 +156,17 @@ def fetch_account_data(client: Trading212Client):
 
     portfolio_path = save_to_file(positions, "portfolio", "positions")
     print(f"✓ Portfolio saved to: {portfolio_path}")
+
+    # Export to Yahoo Finance CSV (if there are positions)
+    if positions:
+        try:
+            instruments_list = client.instruments.get_all_instruments()
+            instruments = {inst['ticker']: inst for inst in instruments_list}
+            export_portfolio_to_yahoo_csv(positions, instruments)
+        except Exception as e:
+            # Fallback to basic export without instrument metadata
+            print(f"Warning: Could not load instrument metadata: {e}", file=sys.stderr)
+            export_portfolio_to_yahoo_csv(positions)
 
 
 def main():

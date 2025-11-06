@@ -29,6 +29,7 @@ Simple Python client for fetching account data from the Trading212 API.
 - ✅ Instrument metadata (names, ISINs) with disk caching
 - ✅ Support for demo and live environments
 - ✅ Export data to JSON with timestamps
+- ✅ Export portfolio to Yahoo Finance CSV format
 - ✅ Clean console output with formatted tables
 - ✅ Smart caching (in-memory + daily disk cache with audit trail)
 - ✅ Programmatic API for custom integrations
@@ -48,11 +49,12 @@ Simple Python client for fetching account data from the Trading212 API.
 ├── main.py              # Application entry point
 ├── requirements.txt     # Python dependencies
 ├── .env.example         # Environment variable template
-├── data/                # JSON output (organized by date)
+├── data/                # Data output (organized by date)
 │   └── YYYY-MM-DD/      # Daily folders
-│       ├── account/     # Account data
-│       ├── portfolio/   # Portfolio snapshots
-│       └── instruments/ # Cached instruments
+│       ├── account/     # Account data (JSON)
+│       ├── portfolio/   # Portfolio snapshots (JSON)
+│       ├── yahoo/       # Yahoo Finance CSV exports
+│       └── instruments/ # Cached instruments (JSON)
 └── docs/
     ├── SETUP.md         # Detailed setup guide
     ├── API_REFERENCE.md # Trading212 API documentation
@@ -79,7 +81,7 @@ Simple Python client for fetching account data from the Trading212 API.
 ## Usage as a Library
 
 ```python
-from t212 import Trading212Client, save_to_file
+from t212 import Trading212Client, save_to_file, export_portfolio_to_yahoo_csv
 
 client = Trading212Client(
     api_key="your_api_key",
@@ -102,6 +104,15 @@ position = client.portfolio.get_position('AAPL_US_EQ')
 # Save data to organized structure
 path = save_to_file(balance, "account", "balance")
 # Saves to: data/2025-11-05/account/balance_22-30-15.json
+
+# Export portfolio to Yahoo Finance CSV (with instrument metadata for accurate transformation)
+instruments_list = client.instruments.get_all_instruments()
+instruments = {inst['ticker']: inst for inst in instruments_list}
+csv_path = export_portfolio_to_yahoo_csv(positions, instruments)
+# Saves to: data/2025-11-05/yahoo/portfolio_22-30-15.csv
+# Tickers are intelligently transformed:
+#   - Exchange suffixes: VUSAl_EQ → VUSA.L, ADYENa_EQ → ADYEN.AS
+#   - US stocks: NVDA_US_EQ → NVDA (using shortName)
 ```
 
 ## Security

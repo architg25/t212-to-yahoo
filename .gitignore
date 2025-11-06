@@ -38,7 +38,7 @@ htmlcov/
 logs/
 
 # Output data
-data/*/
+data/
 
 # OS
 .DS_Store

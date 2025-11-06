@@ -6,7 +6,7 @@ This document provides instructions for working with the Trading212 API client c
 
 Python client library for the Trading212 API with a modular architecture for easy extension.
 
-**Current Features**: Account data, portfolio positions, and instrument metadata with smart caching
+**Current Features**: Account data, portfolio positions, instrument metadata with smart caching, and Yahoo Finance CSV export
 
 ## Architecture
 
@@ -14,13 +14,13 @@ Python client library for the Trading212 API with a modular architecture for eas
 
 ```
 t212/
-├── __init__.py      # Package exports (Trading212Client, save_to_file)
+├── __init__.py      # Package exports (Trading212Client, save_to_file, export_portfolio_to_yahoo_csv)
 ├── auth.py          # HTTP Basic Auth handler
 ├── client.py        # Base HTTP client with request handling
 ├── account.py       # Account data endpoints (cash, info)
 ├── portfolio.py     # Portfolio endpoints (positions)
 ├── instruments.py   # Instruments metadata (names, ISINs) with disk caching
-└── utils.py         # Utility functions (save_to_file)
+└── utils.py         # Utility functions (save_to_file, export_portfolio_to_yahoo_csv)
 ```
 
 ### Design Principles
@@ -175,6 +175,8 @@ data/
       info_22-43-15.json
     portfolio/
       positions_22-43-15.json
+    yahoo/
+      portfolio_22-43-15.csv
     instruments/
       instruments.json
   2025-11-06/
@@ -182,12 +184,82 @@ data/
       balance_09-30-00.json
     portfolio/
       positions_09-30-00.json
+    yahoo/
+      portfolio_09-30-00.csv
     instruments/
       instruments.json
   ...
 ```
 
 **Note**: Historical data is never deleted automatically - manage disk space manually if needed.
+
+## Yahoo Finance CSV Export
+
+### Ticker Transformation
+
+Trading212 tickers are automatically transformed to Yahoo Finance format using exchange suffix mapping:
+
+1. **Check for exchange suffix**: If ticker ends with lowercase letter (e.g., `VUSAl_EQ`, `ADYENa_EQ`), map to Yahoo Finance exchange suffix
+2. **Use shortName**: For tickers without exchange suffix (e.g., `NVDA_US_EQ`), use `shortName` from instrument metadata
+3. **Fallback**: Extract prefix before underscore if instrument data unavailable
+
+Implementation in `t212/utils.py:transform_ticker_for_yahoo()`
+
+### Exchange Suffix Mapping
+
+Trading212 uses lowercase letters to indicate exchanges. These are mapped to Yahoo Finance suffixes:
+
+| Code | Exchange Name                 | Yahoo Suffix | Example Transformation |
+|------|-------------------------------|--------------|------------------------|
+| a    | Euronext Amsterdam            | .AS          | ADYENa_EQ → ADYEN.AS  |
+| b    | Euronext Brussels             | .BR          | —                      |
+| f    | Frankfurt (Xetra)             | .F           | —                      |
+| g    | Euronext Paris                | .PA          | —                      |
+| h    | Hong Kong                     | .HK          | —                      |
+| l    | London Stock Exchange         | .L           | VUSAl_EQ → VUSA.L     |
+| m    | Madrid Stock Exchange         | .MC          | —                      |
+| n    | New York Stock Exchange       | .N           | —                      |
+| o    | NASDAQ                        | .O           | —                      |
+| s    | Stockholm (Nasdaq OMX)        | .ST          | —                      |
+| t    | Tokyo Stock Exchange          | .T           | —                      |
+| v    | Vienna Stock Exchange         | .VI          | —                      |
+| z    | SIX Swiss Exchange (Zurich)   | .SW          | —                      |
+
+**Usage Notes**:
+- The instrument type suffix (`_EQ`, `_ETF`, etc.) is stripped before mapping
+- The last lowercase letter of the ticker prefix indicates the exchange
+- Unrecognized exchange codes are logged as warnings and use `.{UPPERCASE}` fallback
+- US stocks (NYSE/NASDAQ) typically have no lowercase suffix and use shortName directly
+
+### CSV Format
+
+The exported CSV matches Yahoo Finance portfolio import format with these fields populated:
+- **Symbol**: Transformed ticker
+- **Current Price**: From `currentPrice` field
+- **Purchase Price**: From `averagePrice` field
+- **Quantity**: From `quantity` field
+- **Commission**: Default `0.0`
+
+Other fields (Date, Time, Change, Open, High, Low, Volume, Trade Date, etc.) are left empty as they're not available from Trading212 API.
+
+### Usage
+
+```python
+from t212 import export_portfolio_to_yahoo_csv
+
+# Fetch positions
+positions = client.portfolio.get_all_positions()
+
+# Fetch instruments for proper ticker transformation
+instruments_list = client.instruments.get_all_instruments()
+instruments = {inst['ticker']: inst for inst in instruments_list}
+
+# Export to Yahoo Finance CSV
+csv_path = export_portfolio_to_yahoo_csv(positions, instruments)
+# Saves to: data/2025-11-05/yahoo/portfolio_22-43-15.csv
+```
+
+The `main.py` application automatically exports the CSV when fetching portfolio data, using cached instrument metadata for accurate ticker transformation.
 
 ## Roadmap
 
@@ -246,3 +318,31 @@ python main.py
 - Never commit `.env` file
 - API is in beta - endpoints may change
 - Market orders only supported in live environment
+
+## Code Quality Improvements
+
+### Recent Enhancements (2025-11-06)
+
+1. **Better Type Hints**:
+   - Added `Optional[Dict]` for instrument parameters
+   - Consistent typing across all utility functions
+   - Explicit `__all__` exports in utils module
+
+2. **Module-Level Constants**:
+   - `EXCHANGE_SUFFIXES` moved to module level for reusability
+   - Imports organized at top of file (no mid-function imports)
+
+3. **Export Statistics**:
+   - `export_portfolio_to_yahoo_csv()` now prints detailed summary
+   - Reports count of exchange-mapped vs shortName-mapped tickers
+   - Validates non-empty positions before export
+
+4. **Error Handling**:
+   - Better error messages with context
+   - Graceful fallback when instruments API unavailable
+   - Warnings for unrecognized exchange codes
+
+5. **Documentation**:
+   - Comprehensive exchange mapping table in `docs/EXCHANGE_MAPPING.md`
+   - Clear transformation examples
+   - Usage notes for edge cases
