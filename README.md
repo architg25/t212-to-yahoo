@@ -30,7 +30,7 @@ Simple Python client for fetching account data from the Trading212 API.
 - ✅ Support for demo and live environments
 - ✅ Export data to JSON with timestamps
 - ✅ Clean console output with formatted tables
-- ✅ Smart caching (in-memory + daily disk cache)
+- ✅ Smart caching (in-memory + daily disk cache with audit trail)
 - ✅ Programmatic API for custom integrations
 
 ## Project Structure

@@ -62,23 +62,6 @@ class InstrumentsAPI:
         except Exception:
             pass
 
-    def _cleanup_old_instrument_files(self):
-        """Remove old date directories, keeping only today's."""
-        today = datetime.now().strftime("%Y-%m-%d")
-
-        # Iterate through date directories (YYYY-MM-DD format)
-        if self.data_dir.exists():
-            for date_dir in self.data_dir.iterdir():
-                if date_dir.is_dir() and date_dir.name != today:
-                    # Check if it looks like a date directory (YYYY-MM-DD)
-                    if len(date_dir.name) == 10 and date_dir.name.count('-') == 2:
-                        try:
-                            # Remove the entire old date directory
-                            import shutil
-                            shutil.rmtree(date_dir)
-                        except Exception:
-                            pass
-
     def get_all_instruments(self, use_cache: bool = True) -> list:
         """
         Fetch all instruments that your account has access to.
@@ -137,7 +120,6 @@ class InstrumentsAPI:
 
         # Save to disk
         self._save_instruments_to_file(instruments)
-        self._cleanup_old_instrument_files()
 
         return instruments
 

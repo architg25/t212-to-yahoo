@@ -159,13 +159,13 @@ def get_cash(self) -> dict:
 
 ### Instruments Cache
 - **In-memory**: Fast lookup during application runtime
-- **Disk**: Daily rotation (`data/YYYY-MM-DD/instruments/instruments.json`)
-- **Cleanup**: Automatically deletes old date directories
+- **Disk**: Daily files (`data/YYYY-MM-DD/instruments/instruments.json`)
+- **Retention**: All historical data is kept as an audit log
 - **Rate limit**: 1 request per 50 seconds (caching avoids hitting limit)
 
 ## Data Organization
 
-All output is organized by date for easy management:
+All output is organized by date for audit tracking:
 
 ```
 data/
@@ -178,10 +178,16 @@ data/
     instruments/
       instruments.json
   2025-11-06/
-    ...
+    account/
+      balance_09-30-00.json
+    portfolio/
+      positions_09-30-00.json
+    instruments/
+      instruments.json
+  ...
 ```
 
-Old date directories are automatically cleaned up when instruments are fetched.
+**Note**: Historical data is never deleted automatically - manage disk space manually if needed.
 
 ## Roadmap
 
