@@ -141,6 +141,6 @@ All error responses follow this format:
 
 ## Resources
 
-- Official API Documentation: https://docs.trading212.com/api
-- API Environments: https://docs.trading212.com/api/section/general-information/api-environments
-- Account Settings (API Key Generation): https://www.trading212.com/en/settings
+- **Official API Documentation**: https://docs.trading212.com/api
+- **How to Get API Key**: https://helpcentre.trading212.com/hc/en-us/articles/14584770928157-Trading-212-API-key
+- **API Environments**: https://docs.trading212.com/api/section/general-information/api-environments

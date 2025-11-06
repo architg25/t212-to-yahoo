@@ -37,7 +37,7 @@ Seamlessly transfer your Trading212 positions to Yahoo Finance for advanced port
 │  Portfolio   │      │  (1 click)  │      │     CSV      │      │   Analyze    │
 │ 46 positions │      │  Transform  │      │  VUSA.L      │      │   Advanced   │
 └──────────────┘      └─────────────┘      │  ADYEN.AS    │      │   Charts     │
-                                            └──────────────┘      └──────────────┘
+                                           └──────────────┘      └──────────────┘
 ```
 
 **Why?** Yahoo Finance offers superior portfolio analytics, charting, and tracking that Trading212's mobile app doesn't provide. This tool bridges the gap.
@@ -66,7 +66,7 @@ See the [complete flow diagram](.github/workflows/flow-diagram.md) for detailed 
 ```bash
 # 1. Clone the repository
 git clone https://github.com/yourusername/t212.git
-cd t212
+cd t212-to-yahoo
 
 # 2. Install dependencies
 pip install -r requirements.txt
@@ -82,6 +82,8 @@ cp .env.example .env
 2. Go to Settings → API (Beta)
 3. Generate API key + secret
 4. Copy both to your `.env` file
+
+📖 **Detailed Guide**: [How to Get Your Trading212 API Key](https://helpcentre.trading212.com/hc/en-us/articles/14584770928157-Trading-212-API-key)
 
 ### Run
 
@@ -323,6 +325,11 @@ Contributions welcome! This is a personal project but happy to accept:
 
 ## 📚 Documentation
 
+### Official Trading212 Resources
+- **[Trading212 API Documentation](https://docs.trading212.com/api)** - Official API reference
+- **[How to Get API Key](https://helpcentre.trading212.com/hc/en-us/articles/14584770928157-Trading-212-API-key)** - Official guide
+
+### This Project's Documentation
 - **[Exchange Mapping Guide](docs/EXCHANGE_MAPPING.md)** - Complete exchange code reference
 - **[Setup Guide](docs/SETUP.md)** - Detailed installation and configuration
 - **[API Reference](docs/API_REFERENCE.md)** - Trading212 API endpoints

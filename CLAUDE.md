@@ -129,8 +129,9 @@ __all__ = ["Trading212Client", "OrdersAPI"]
 
 ## API Reference
 
-- Official docs: https://docs.trading212.com/api
-- Base URLs:
+- **Official API Documentation**: https://docs.trading212.com/api
+- **How to Get API Key**: https://helpcentre.trading212.com/hc/en-us/articles/14584770928157-Trading-212-API-key
+- **Base URLs**:
   - Demo: `https://demo.trading212.com/api/v0`
   - Live: `https://live.trading212.com/api/v0`
 
