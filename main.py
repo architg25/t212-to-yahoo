@@ -133,28 +133,28 @@ def print_portfolio(positions: list, client: Trading212Client):
     print("="*80 + "\n")
 
 
-def fetch_account_data(client: Trading212Client):
+def fetch_account_data(client: Trading212Client, account: str = None):
     """Fetch and display all account data."""
 
     print("Fetching account balance...")
     balance = client.account.get_cash()
     print_account_balance(balance)
 
-    balance_path = save_to_file(balance, "account", "balance")
+    balance_path = save_to_file(balance, "account", "balance", account=account)
     print(f"✓ Balance saved to: {balance_path}")
 
     print("\nFetching account info...")
     info = client.account.get_info()
     print_account_info(info)
 
-    info_path = save_to_file(info, "account", "info")
+    info_path = save_to_file(info, "account", "info", account=account)
     print(f"✓ Info saved to: {info_path}")
 
     print("\nFetching portfolio positions...")
     positions = client.portfolio.get_all_positions()
     print_portfolio(positions, client)
 
-    portfolio_path = save_to_file(positions, "portfolio", "positions")
+    portfolio_path = save_to_file(positions, "portfolio", "positions", account=account)
     print(f"✓ Portfolio saved to: {portfolio_path}")
 
     # Export to Yahoo Finance CSV (if there are positions)
@@ -162,11 +162,11 @@ def fetch_account_data(client: Trading212Client):
         try:
             instruments_list = client.instruments.get_all_instruments()
             instruments = {inst['ticker']: inst for inst in instruments_list}
-            export_portfolio_to_yahoo_csv(positions, instruments)
+            export_portfolio_to_yahoo_csv(positions, instruments, account=account)
         except Exception as e:
             # Fallback to basic export without instrument metadata
             print(f"Warning: Could not load instrument metadata: {e}", file=sys.stderr)
-            export_portfolio_to_yahoo_csv(positions)
+            export_portfolio_to_yahoo_csv(positions, account=account)
 
 
 def main():
@@ -176,6 +176,7 @@ def main():
     api_key = os.getenv('T212_API_KEY')
     api_secret = os.getenv('T212_API_SECRET')
     environment = os.getenv('T212_ENV', 'demo')
+    account = os.getenv('T212_ACCOUNT')
 
     if not api_key or not api_secret:
         print("ERROR: T212_API_KEY and T212_API_SECRET required", file=sys.stderr)
@@ -184,6 +185,8 @@ def main():
 
     print(f"\n{'='*60}")
     print(f"Trading212 Application - {environment.upper()} Environment")
+    if account:
+        print(f"Account: {account}")
     print(f"{'='*60}\n")
 
     try:
@@ -193,7 +196,7 @@ def main():
             environment=environment
         )
 
-        fetch_account_data(client)
+        fetch_account_data(client, account=account)
 
         print("\n" + "="*60)
         print("SUCCESS")

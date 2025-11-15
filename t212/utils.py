@@ -5,7 +5,7 @@ Utility functions for the Trading212 API client.
 import csv
 import json
 import sys
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Dict, Optional, Union
 
@@ -38,18 +38,20 @@ def save_to_file(
     data: Union[dict, list],
     category: str,
     filename: str,
-    base_dir: Path = Path("data")
+    base_dir: Path = Path("data"),
+    account: Optional[str] = None
 ) -> Path:
     """
     Save data to a date-organized JSON file.
 
-    Structure: data/YYYY-MM-DD/category/filename_HH-MM-SS.json
+    Structure: data/YYYY-MM-DD/category/filename_ACCOUNT_HH-MM-SS.json
 
     Args:
         data: Data to save (dict or list)
         category: Category folder (e.g., 'account', 'portfolio', 'instruments')
         filename: Base filename (e.g., 'balance', 'positions')
         base_dir: Base directory (default: 'data')
+        account: Optional account identifier to append to filename
 
     Returns:
         Path: Path to the saved file
@@ -57,9 +59,9 @@ def save_to_file(
     Example:
         >>> from t212.utils import save_to_file
         >>> balance = client.account.get_cash()
-        >>> path = save_to_file(balance, "account", "balance")
+        >>> path = save_to_file(balance, "account", "balance", account="ISA")
         >>> print(path)
-        data/2025-11-05/account/balance_22-43-15.json
+        data/2025-11-05/account/balance_ISA_22-43-15.json
     """
     now = datetime.now()
     date_str = now.strftime("%Y-%m-%d")
@@ -69,8 +71,11 @@ def save_to_file(
     directory = base_dir / date_str / category
     directory.mkdir(parents=True, exist_ok=True)
 
-    # Filename: filename_HH-MM-SS.json
-    full_filename = f"{filename}_{time_str}.json"
+    # Filename: filename_ACCOUNT_HH-MM-SS.json or filename_HH-MM-SS.json
+    if account:
+        full_filename = f"{filename}_{account}_{time_str}.json"
+    else:
+        full_filename = f"{filename}_{time_str}.json"
     filepath = directory / full_filename
 
     with open(filepath, 'w') as f:
@@ -151,18 +156,20 @@ def export_portfolio_to_yahoo_csv(
     positions: list,
     instruments: Optional[Dict[str, dict]] = None,
     output_path: Optional[Path] = None,
-    base_dir: Path = Path("data")
+    base_dir: Path = Path("data"),
+    account: Optional[str] = None
 ) -> Path:
     """
     Export portfolio positions to Yahoo Finance CSV format.
 
-    Structure: data/YYYY-MM-DD/yahoo/portfolio_HH-MM-SS.csv
+    Structure: data/YYYY-MM-DD/yahoo/portfolio_ACCOUNT_HH-MM-SS.csv
 
     Args:
         positions: List of position dicts from Trading212 API
         instruments: Optional dict mapping ticker to instrument metadata
         output_path: Optional custom output path
         base_dir: Base directory (default: 'data')
+        account: Optional account identifier to append to filename
 
     Returns:
         Path: Path to the saved CSV file
@@ -174,12 +181,34 @@ def export_portfolio_to_yahoo_csv(
         >>> positions = client.portfolio.get_all_positions()
         >>> instruments_list = client.instruments.get_all_instruments()
         >>> instruments = {inst['ticker']: inst for inst in instruments_list}
-        >>> path = export_portfolio_to_yahoo_csv(positions, instruments)
+        >>> path = export_portfolio_to_yahoo_csv(positions, instruments, account="ISA")
         >>> print(path)
-        data/2025-11-05/yahoo/portfolio_22-30-15.csv
+        data/2025-11-05/yahoo/portfolio_ISA_22-30-15.csv
     """
     if not positions:
         raise ValueError("Cannot export empty positions list")
+
+    # Helper function to calculate current position value accounting for currency
+    def get_position_value(pos: dict) -> float:
+        ticker = pos.get('ticker', '')
+        current_price = pos.get('currentPrice', 0)
+        quantity = pos.get('quantity', 0)
+
+        # Look up currency code from instruments
+        if instruments and ticker in instruments:
+            currency_code = instruments[ticker].get('currencyCode', '')
+            # GBX is pence, divide by 100 to get actual pounds
+            if currency_code == 'GBX':
+                current_price = current_price / 100
+
+        return current_price * quantity
+
+    # Sort positions by current value ascending
+    sorted_positions = sorted(
+        positions,
+        key=get_position_value,
+        reverse=False
+    )
 
     # Use custom path or generate date-based path
     if output_path is None:
@@ -190,8 +219,16 @@ def export_portfolio_to_yahoo_csv(
         directory = base_dir / date_str / "yahoo"
         directory.mkdir(parents=True, exist_ok=True)
 
-        filename = f"portfolio_{time_str}.csv"
+        # Filename: portfolio_ACCOUNT_HH-MM-SS.csv or portfolio_HH-MM-SS.csv
+        if account:
+            filename = f"portfolio_{account}_{time_str}.csv"
+        else:
+            filename = f"portfolio_{time_str}.csv"
         output_path = directory / filename
+
+    # Calculate yesterday's date for CSV Date column
+    yesterday = datetime.now() - timedelta(days=1)
+    yesterday_str = yesterday.strftime("%Y/%m/%d")  # YYYY/MM/DD format for Yahoo Finance
 
     # Yahoo Finance CSV headers
     headers = [
@@ -208,7 +245,7 @@ def export_portfolio_to_yahoo_csv(
         writer = csv.DictWriter(f, fieldnames=headers)
         writer.writeheader()
 
-        for pos in positions:
+        for pos in sorted_positions:
             ticker = pos.get('ticker', '')
 
             # Get instrument metadata if available
@@ -226,8 +263,8 @@ def export_portfolio_to_yahoo_csv(
             row = {
                 'Symbol': yahoo_ticker,
                 'Current Price': pos.get('currentPrice', ''),
-                'Date': '',
-                'Time': '',
+                'Date': yesterday_str,
+                'Time': '16:00 EST',
                 'Change': '',
                 'Open': '',
                 'High': '',

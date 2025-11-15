@@ -61,8 +61,22 @@ pip install -r requirements.txt
 
 # Configure credentials
 cp .env.example .env
-# Edit .env with your demo credentials
+# Edit .env with your credentials:
+#   - T212_API_KEY: Your API key
+#   - T212_API_SECRET: Your API secret
+#   - T212_ENV: 'demo' or 'live'
+#   - T212_ACCOUNT (optional): Account identifier for file naming (e.g., ISA, INVEST, CFD)
 ```
+
+### Environment Variables
+
+- **T212_API_KEY** (required): Your Trading212 API key
+- **T212_API_SECRET** (required): Your Trading212 API secret
+- **T212_ENV** (optional): Environment (`demo` or `live`, defaults to `demo`)
+- **T212_ACCOUNT** (optional): Account identifier appended to saved filenames
+  - Examples: `ISA`, `INVEST`, `CFD`
+  - Affects filenames: `balance_ISA_22-43-15.json`, `portfolio_ISA_22-43-15.json`, `portfolio_ISA_22-43-15.csv`
+  - If not set, files are saved without account identifier
 
 ### Testing
 
@@ -166,31 +180,35 @@ def get_cash(self) -> dict:
 
 ## Data Organization
 
-All output is organized by date for audit tracking:
+All output is organized by date for audit tracking. Files can optionally include an account identifier (set via `T212_ACCOUNT` environment variable):
 
 ```
 data/
   2025-11-05/
     account/
-      balance_22-43-15.json
-      info_22-43-15.json
+      balance_ISA_22-43-15.json
+      info_ISA_22-43-15.json
     portfolio/
-      positions_22-43-15.json
+      positions_ISA_22-43-15.json
     yahoo/
-      portfolio_22-43-15.csv
+      portfolio_ISA_22-43-15.csv
     instruments/
       instruments.json
   2025-11-06/
     account/
-      balance_09-30-00.json
+      balance_ISA_09-30-00.json
     portfolio/
-      positions_09-30-00.json
+      positions_ISA_09-30-00.json
     yahoo/
-      portfolio_09-30-00.csv
+      portfolio_ISA_09-30-00.csv
     instruments/
       instruments.json
   ...
 ```
+
+**File Naming Convention**:
+- With account: `filename_ACCOUNT_HH-MM-SS.json` (e.g., `balance_ISA_22-43-15.json`)
+- Without account: `filename_HH-MM-SS.json` (e.g., `balance_22-43-15.json`)
 
 **Note**: Historical data is never deleted automatically - manage disk space manually if needed.
 
@@ -236,12 +254,18 @@ Trading212 uses lowercase letters to indicate exchanges. These are mapped to Yah
 
 The exported CSV matches Yahoo Finance portfolio import format with these fields populated:
 - **Symbol**: Transformed ticker
-- **Current Price**: From `currentPrice` field
+- **Current Price**: From `currentPrice` field (adjusted for GBX currency)
+- **Date**: Yesterday's date in YYYY/MM/DD format
+- **Time**: Fixed at `16:00 EST` (market close)
 - **Purchase Price**: From `averagePrice` field
 - **Quantity**: From `quantity` field
 - **Commission**: Default `0.0`
 
-Other fields (Date, Time, Change, Open, High, Low, Volume, Trade Date, etc.) are left empty as they're not available from Trading212 API.
+**Position Sorting**: Positions are sorted by current value (`currentPrice × quantity`) in ascending order (smallest to largest). GBX (pence) prices are automatically divided by 100 before calculating position value.
+
+**Currency Handling**: The export automatically detects GBX (pence) currency codes from instrument metadata and divides prices by 100 to convert to pounds for accurate position calculations.
+
+Other fields (Change, Open, High, Low, Volume, Trade Date, etc.) are left empty as they're not available from Trading212 API.
 
 ### Usage
 
@@ -251,16 +275,16 @@ from t212 import export_portfolio_to_yahoo_csv
 # Fetch positions
 positions = client.portfolio.get_all_positions()
 
-# Fetch instruments for proper ticker transformation
+# Fetch instruments for proper ticker transformation and currency handling
 instruments_list = client.instruments.get_all_instruments()
 instruments = {inst['ticker']: inst for inst in instruments_list}
 
 # Export to Yahoo Finance CSV
-csv_path = export_portfolio_to_yahoo_csv(positions, instruments)
-# Saves to: data/2025-11-05/yahoo/portfolio_22-43-15.csv
+csv_path = export_portfolio_to_yahoo_csv(positions, instruments, account="ISA")
+# Saves to: data/2025-11-05/yahoo/portfolio_ISA_22-43-15.csv
 ```
 
-The `main.py` application automatically exports the CSV when fetching portfolio data, using cached instrument metadata for accurate ticker transformation.
+The `main.py` application automatically exports the CSV when fetching portfolio data, using cached instrument metadata for accurate ticker transformation and currency handling. The account identifier is read from the `T212_ACCOUNT` environment variable.
 
 ## Roadmap
 
